@@ -63,7 +63,32 @@ defmodule Bp do
   defp do_sync(procs, syncs) do
     alive_syncs = drop_removed syncs
     alive_procs = keep_alive procs, alive_syncs
-    {procs, syncs}
+
+    proc_request = get_proc_requests alive_syncs
+    prio_request = for {p, e} <- proc_request do
+      {procs |> List.keyfind(p, 0) |> elem(1), e}
+    end
+
+    blocked = List.flatten(
+      for %Bp.Sync{block: block} <- alive_syncs, do: block
+    )
+
+    events = for e = {_, r} <- prio_request, !Enum.member?(blocked, r), do: e
+
+    case events do
+      [] -> {alive_procs, alive_syncs}
+      _ ->
+        {_, e} = events |> List.keysort(0) |> hd
+        {to_release, wait} = alive_syncs |> Enum.partition(
+          fn(%Bp.Sync{wait: w, request: r}) ->
+            Enum.member?(w, e) or Enum.member?(r, e)
+          end
+        )
+        for %Bp.Sync{pid: pid} <- to_release do
+          send pid, {:sync, e}
+        end
+        {alive_procs, wait}
+    end
   end
 
   defp drop_removed(syncs) do
@@ -71,6 +96,16 @@ defmodule Bp do
   end
 
   defp keep_alive(procs, syncs) do
+    for {pid, prio} <- procs,
+        %Bp.Sync{pid: keep} <- syncs,
+        pid == keep do
+          {pid, prio}
+    end
+  end
+
+  defp get_proc_requests(syncs) do
+    for %Bp.Sync{pid: pid, request: reqs} <- syncs,
+        req <- reqs, do: {pid, req}
   end
 
 
