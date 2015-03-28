@@ -57,7 +57,7 @@ defmodule Bp do
   defp _pid(s), do: s
 
   def remove(cpid, pid) do
-    send cpid, %Sync{pid: pid, remove: true}
+    send cpid, {:sync, %Sync{pid: pid, remove: true}}
   end
 
   defp do_sync(procs, syncs) do
