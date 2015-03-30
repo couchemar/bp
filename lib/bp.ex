@@ -43,8 +43,7 @@ defmodule Bp do
   end
 
   def sync(cpid, s) do
-    new_s = s |> _wait |> _pid
-    send cpid, {:sync, new_s}
+    send cpid, {:sync, s |> _wait |> _pid}
     receive do
       {:sync, event} -> event
     end
@@ -107,7 +106,5 @@ defmodule Bp do
     for %Bp.Sync{pid: pid, request: reqs} <- syncs,
         req <- reqs, do: {pid, req}
   end
-
-
 
 end
