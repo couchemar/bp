@@ -39,9 +39,9 @@ defmodule Test do
 
 end
 
+require Logger
+Logger.configure level: :info
 Test.test
 receive do
   _ -> :ok
 end
-
-
