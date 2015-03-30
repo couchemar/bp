@@ -21,12 +21,10 @@ defmodule Bp do
       {:add, pid, prio} ->
         Process.link pid
         loop [{pid, prio} | procs], syncs
-      {:sync, sync} when (1 + length(syncs)) == length(procs) ->
-        Logger.debug fn -> "Prepare sync" end
+      {:sync, sync} ->
+        Logger.debug fn -> "Got sync message #{inspect sync}" end
         {new_procs, new_syncs} = do_sync procs, [sync | syncs]
         loop new_procs, new_syncs
-      {:sync, sync}  ->
-        loop procs, [sync | syncs]
       {:EXIT, pid, _reason} ->
         Logger.debug fn -> "Process #{inspect pid} terminated" end
         remove self(), pid
@@ -59,7 +57,7 @@ defmodule Bp do
     send cpid, {:sync, %Sync{pid: pid, remove: true}}
   end
 
-  defp do_sync(procs, syncs) do
+  defp do_sync(procs, syncs) when length(procs) == length(syncs) do
     alive_syncs = drop_removed syncs
     alive_procs = keep_alive procs, alive_syncs
 
@@ -89,6 +87,7 @@ defmodule Bp do
         {alive_procs, wait}
     end
   end
+  defp do_sync(procs, syncs), do: {procs, syncs}
 
   defp drop_removed(syncs) do
     syncs |> Enum.filter(fn(%Bp.Sync{remove: f}) -> !f end)
