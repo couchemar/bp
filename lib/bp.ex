@@ -58,6 +58,7 @@ defmodule Bp do
   end
 
   defp do_sync(procs, syncs) when length(procs) == length(syncs) do
+    Logger.debug fn() -> "Doing sync" end
     alive_syncs = drop_removed syncs
     alive_procs = keep_alive procs, alive_syncs
 
@@ -81,6 +82,7 @@ defmodule Bp do
             Enum.member?(w, e) or Enum.member?(r, e)
           end
         )
+        Logger.debug fn() -> "Send #{inspect e} to #{inspect to_release}" end
         for %Bp.Sync{pid: pid} <- to_release do
           send pid, {:sync, e}
         end

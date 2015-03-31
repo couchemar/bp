@@ -7,6 +7,7 @@ defmodule Eratosthenes do
     IO.puts "#{i} is #{inspect t}"
     sequencer(i+1)
   end
+  def sequencer(_), do: IO.puts "---"
 
   def pFactors(i) do
     pFactors(2*i, i)
