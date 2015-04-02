@@ -24,7 +24,7 @@ defmodule Test do
     Bp.sync :bp, %Bp.Sync{wait: [:morning],
                           block: [:evening]}
     Bp.sync :bp, %Bp.Sync{wait: [:evening],
-                            block: [:morning]}
+                          block: [:morning]}
     interleave
   end
 
