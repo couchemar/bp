@@ -8,15 +8,13 @@ defmodule Test do
 
   def morning do
     for _ <- 1..3 do
-      Bp.sync :bp, %Bp.Sync{wait: [:morning],
-                            request: [:morning]}
+      Bp.sync :bp, %Bp.Sync{request: [:morning]}
     end
   end
 
   def evening do
     for _ <- 1..3 do
-      Bp.sync :bp, %Bp.Sync{wait: [:evening],
-                            request: [:evening]}
+      Bp.sync :bp, %Bp.Sync{request: [:evening]}
     end
   end
 
@@ -31,10 +29,10 @@ defmodule Test do
   def test do
     bc = Bp.spawn
     Process.register bc, :bp
-    Bp.add :bp, &morning/0, 1
-    Bp.add :bp, &display/0, 2
-    Bp.add :bp, &evening/0, 3
-    Bp.add :bp, &interleave/0, 4
+    Bp.add :bp, &morning/0
+    Bp.add :bp, &evening/0
+    Bp.add :bp, &display/0
+    Bp.add :bp, &interleave/0
   end
 
 end

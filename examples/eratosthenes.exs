@@ -1,9 +1,8 @@
 defmodule Eratosthenes do
 
   def sequencer(i) when i < 100 do
-    Bp.sync :bp, %Bp.Sync{wait: [i], request: [i]}
-    t = Bp.sync :bp, %Bp.Sync{wait: [:prime, :not_prime],
-                              request: [:prime, :not_prime]}
+    Bp.sync :bp, %Bp.Sync{request: [i]}
+    t = Bp.sync :bp, %Bp.Sync{request: [:prime, :not_prime]}
     IO.puts "#{i} is #{inspect t}"
     sequencer(i+1)
   end
@@ -23,7 +22,7 @@ defmodule Eratosthenes do
     i = Bp.sync :bp, %Bp.Sync{wait: [i]}
     t = Bp.sync :bp, %Bp.Sync{wait: [:prime, :not_prime]}
     cond do
-      t == :prime -> Bp.add :bp, fn() -> pFactors(i) end, 1
+      t == :prime -> Bp.add :bp, fn() -> pFactors(i) end
       true -> :ok
     end
     factory(i + 1)
@@ -32,8 +31,8 @@ defmodule Eratosthenes do
   def run do
     bc = Bp.spawn
     Process.register bc, :bp
-    Bp.add :bp, fn() -> sequencer(2) end, 3
-    Bp.add :bp, fn() -> factory(2) end, 4
+    Bp.add :bp, fn() -> sequencer(2) end
+    Bp.add :bp, fn() -> factory(2) end
   end
 
 end

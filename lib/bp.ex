@@ -34,6 +34,7 @@ defmodule Bp do
     end
   end
 
+  def add(cpid, fun), do: add(cpid, fun, 0)
   def add(cpid, fun, prio) do
     pid = spawn fun
     send cpid, {:add, pid, prio}
