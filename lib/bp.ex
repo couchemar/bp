@@ -92,21 +92,17 @@ defmodule Bp do
   end
   defp do_sync(procs, syncs), do: {procs, syncs}
 
-  defp drop_removed(syncs) do
-    syncs |> Enum.filter(fn(%Bp.Sync{remove: f}) -> !f end)
-  end
+  defp drop_removed(syncs),
+  do: syncs |> Enum.filter(fn(%Bp.Sync{remove: f}) -> !f end)
 
   defp keep_alive(procs, syncs) do
     for {pid, prio} <- procs,
         %Bp.Sync{pid: keep} <- syncs,
-        pid == keep do
-          {pid, prio}
-    end
+        pid == keep, do: {pid, prio}
   end
 
   defp get_proc_requests(syncs) do
-    for %Bp.Sync{pid: pid, request: reqs} <- syncs,
-        req <- reqs, do: {pid, req}
+    for %Bp.Sync{pid: pid, request: reqs} <- syncs, req <- reqs, do: {pid, req}
   end
 
 end
