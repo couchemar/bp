@@ -86,7 +86,20 @@ defmodule TTT do
   end
 
 
-  def prevent_line_with_two do
+  defmodule PreventLineWithTwo do
+
+    def start(squares), do: loop(squares)
+
+    defp loop([last_square|rest]) when rest == [], do: prevent(last_square)
+    defp loop([square|rest]) do
+      Bp.sync :bp, %Bp.Sync{wait: [{:x, square}]}
+      loop(rest)
+    end
+
+    defp prevent(last_square) do
+      Bp.sync :bp, %Bp.Sync{request: [{:o, last_square}]}
+    end
+
   end
 
 
