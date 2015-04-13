@@ -29,20 +29,20 @@ defmodule TTT do
       {:x, s}
     end)
 
-    @allYs (for s <- 1..9 do
-      {:y, s}
+    @allOs (for s <- 1..9 do
+      {:o, s}
     end)
 
     def start, do: waitX
 
     defp waitX do
-      Bp.sync :bp, %Bp.Sync{wait: @allXs, block: @allYs}
-      waitY
+      Bp.sync :bp, %Bp.Sync{wait: @allXs, block: @allOs}
+      waitO
     end
 
-    defp waitY do
-      Bp.sync :bp, %Bp.Sync{wait: @allYs, block: @allXs}
-      waitY
+    defp waitO do
+      Bp.sync :bp, %Bp.Sync{wait: @allOs, block: @allXs}
+      waitX
     end
 
   end
@@ -51,14 +51,38 @@ defmodule TTT do
   defmodule DisallowSquareReuse do
 
     def start(square) do
-      Bp.sync :bp, %Bp.Sync{wait: [{:x, square}, {:y, square}]}
-      Bp.sync :bp, %Bp.Sync{block: [{:x, square}, {:y, square}]}
+      Bp.sync :bp, %Bp.Sync{wait: [{:x, square}, {:o, square}]}
+      Bp.sync :bp, %Bp.Sync{block: [{:x, square}, {:o, square}]}
     end
 
   end
 
 
-  def default_moves do
+  defmodule DefaultMoves do
+
+    @default_moves [
+      {:o, 5},
+      {:o, 1},
+      {:o, 3},
+      {:o, 7},
+      {:o, 9},
+      {:o, 2},
+      {:o, 4},
+      {:o, 6},
+      {:o, 8}
+    ]
+
+    @all_moves (for s <- 1..9 do
+      {:x, s}
+    end) ++ (for s <- 1..9 do
+      {:o, s}
+    end) ++ [{:win, :x}, {:win, :o}]
+
+    def start do
+      Bp.sync :bp, %Bp.Sync{request: @default_moves, wait: @all_moves}
+      start
+    end
+
   end
 
 
