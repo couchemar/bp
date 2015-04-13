@@ -33,9 +33,7 @@ defmodule TTT do
       {:y, s}
     end)
 
-    def start do
-      waitX
-    end
+    def start, do: waitX
 
     defp waitX do
       Bp.sync :bp, %Bp.Sync{wait: @allXs, block: @allYs}
@@ -50,7 +48,13 @@ defmodule TTT do
   end
 
 
-  def disallow_square_reuse do
+  defmodule DisallowSquareReuse do
+
+    def start(square) do
+      Bp.sync :bp, %Bp.Sync{wait: [{:x, square}, {:y, square}]}
+      Bp.sync :bp, %Bp.Sync{block: [{:x, square}, {:y, square}]}
+    end
+
   end
 
 
