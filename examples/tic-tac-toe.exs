@@ -4,7 +4,7 @@ defmodule TTT do
   Board squares
   |1|2|3|
   |4|5|6|
-  |7|8|0|
+  |7|8|9|
   """
 
   defmodule DetectWin do
@@ -23,8 +23,30 @@ defmodule TTT do
 
   end
 
+  defmodule EnforceTurns do
 
-  def enforce_turns do
+    @allXs (for s <- 1..9 do
+      {:x, s}
+    end)
+
+    @allYs (for s <- 1..9 do
+      {:y, s}
+    end)
+
+    def start do
+      waitX
+    end
+
+    defp waitX do
+      Bp.sync :bp, %Bp.Sync{wait: @allXs, block: @allYs}
+      waitY
+    end
+
+    defp waitY do
+      Bp.sync :bp, %Bp.Sync{wait: @allYs, block: @allXs}
+      waitY
+    end
+
   end
 
 
