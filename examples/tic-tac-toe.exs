@@ -87,8 +87,9 @@ defmodule TTT do
 
 
   defmodule PreventLineWithTwo do
-
-    def start(squares), do: loop(squares)
+    def start(squares) do
+      loop(squares)
+    end
 
     defp loop([last_square|[]]), do: prevent(last_square)
     defp loop([square|rest]) do
@@ -103,7 +104,6 @@ defmodule TTT do
   end
 
   defmodule CompleteLineWithTwo do
-
     def start(squares) do
       loop squares
     end
@@ -187,4 +187,61 @@ defmodule TTT do
 
 end
 
+defmodule Utils do
+  def permutations([]), do: [[]]
+  def permutations(l) do
+    for h <- l, t <- permutations(l -- [h]) do
+      [h | t]
+    end
+  end
+end
+
+require Bp
+bc = Bp.spawn
+Process.register bc, :bp
+
+lines = [
+  [1, 2, 3],
+  [4, 5, 6],
+  [7, 8, 9],
+
+  [1, 4, 7],
+  [2, 5, 8],
+  [3, 6, 9],
+
+  [1, 5, 9],
+  [3, 5, 7]
+]
+
+for player <- [:x, :o], line <- lines, perm <- Utils.permutations(line) do
+  Bp.add :bp, fn() -> TTT.DetectWin.start(player, perm) end, 0
+end
+
+Bp.add :bp, &TTT.EnforceTurns.start/0, 1
+
+for square <- 1..9 do
+  Bp.add :bp, fn() -> TTT.DisallowSquareReuse.start(square) end, 2
+end
+
+Bp.add :bp, &TTT.DefaultMoves.start/0, 12
+
+for line <- lines, perm <- Utils.permutations(line) do
+  Bp.add :bp, fn() -> TTT.PreventLineWithTwo.start(perm) end, 9
+end
+
+for line <- lines, perm <- Utils.permutations(line) do
+  Bp.add :bp, fn() -> TTT.CompleteLineWithTwo.start(perm) end, 8
+end
+
+
+
+
+
+#Bp.start :bp
+
+
+
+receive do
+  _ -> :ok
+end
 

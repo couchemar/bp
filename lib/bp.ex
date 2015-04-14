@@ -9,30 +9,31 @@ defmodule Bp do
   require Logger
 
   def spawn do
-    spawn(Bp, :loop, [[], []])
+    spawn(Bp, :loop, [false, [], []])
   end
 
-  def loop(procs, syncs) do
+  def loop(start, procs, syncs) do
     Process.flag(:trap_exit, true)
     Logger.debug fn ->
       "Processes: #{inspect procs} Sync requests: #{inspect syncs}"
     end
     receive do
+      :start -> loop true, procs, syncs
       {:add, pid, prio} ->
         Process.link pid
-        loop [{pid, prio} | procs], syncs
-      {:sync, sync} ->
+        loop start, [{pid, prio} | procs], syncs
+      {:sync, sync} when start ->
         Logger.debug fn -> "Got sync message #{inspect sync}" end
         {new_procs, new_syncs} = do_sync procs, [sync | syncs]
-        loop new_procs, new_syncs
+        loop start, new_procs, new_syncs
       {:EXIT, pid, _reason} ->
         Logger.debug fn -> "Process #{inspect pid} terminated" end
         remove self(), pid
-        loop procs, syncs
-      other ->
-        Logger.debug fn -> "Got message #{inspect other}" end
+        loop start, procs, syncs
     end
   end
+
+  def start(cpid), do: send(cpid, :start)
 
   def add(cpid, fun), do: add(cpid, fun, 0)
   def add(cpid, fun, prio) do

@@ -33,6 +33,7 @@ defmodule Eratosthenes do
     Process.register bc, :bp
     Bp.add :bp, fn() -> sequencer(2) end
     Bp.add :bp, fn() -> factory(2) end
+    Bp.start :bp
   end
 
 end

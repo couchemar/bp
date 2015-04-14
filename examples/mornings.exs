@@ -33,6 +33,7 @@ defmodule Test do
     Bp.add :bp, &evening/0
     Bp.add :bp, &display/0
     Bp.add :bp, &interleave/0
+    Bp.start :bp
   end
 
 end
