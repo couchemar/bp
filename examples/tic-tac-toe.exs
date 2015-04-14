@@ -90,7 +90,7 @@ defmodule TTT do
 
     def start(squares), do: loop(squares)
 
-    defp loop([last_square|rest]) when rest == [], do: prevent(last_square)
+    defp loop([last_square|[]]), do: prevent(last_square)
     defp loop([square|rest]) do
       Bp.sync :bp, %Bp.Sync{wait: [{:x, square}]}
       loop(rest)
@@ -102,8 +102,22 @@ defmodule TTT do
 
   end
 
+  defmodule CompleteLineWithTwo do
 
-  def complete_line_with_two do
+    def start(squares) do
+      loop(squares)
+    end
+
+    defp loop([last_square|[]]), do: complete(last_square)
+    defp loop([square|rest]) do
+      Bp.sync :bp, %Bp.Sync{wait: [{:o, square}]}
+      loop(rest)
+    end
+
+    defp prevent(last_square) do
+      Bp.sync :bp, %Bp.Sync{request: [{:o, last_square}]}
+    end
+
   end
 
 
