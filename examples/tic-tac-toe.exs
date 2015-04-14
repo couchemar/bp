@@ -93,7 +93,7 @@ defmodule TTT do
     defp loop([last_square|[]]), do: prevent(last_square)
     defp loop([square|rest]) do
       Bp.sync :bp, %Bp.Sync{wait: [{:x, square}]}
-      loop(rest)
+      loop rest
     end
 
     defp prevent(last_square) do
@@ -105,29 +105,62 @@ defmodule TTT do
   defmodule CompleteLineWithTwo do
 
     def start(squares) do
-      loop(squares)
+      loop squares
     end
 
     defp loop([last_square|[]]), do: complete(last_square)
     defp loop([square|rest]) do
       Bp.sync :bp, %Bp.Sync{wait: [{:o, square}]}
-      loop(rest)
+      loop rest
     end
 
-    defp prevent(last_square) do
+    defp complete(last_square) do
       Bp.sync :bp, %Bp.Sync{request: [{:o, last_square}]}
     end
 
   end
 
 
-  def intercept_single_fork do
+  defmodule InterceptSingleFork do
+
+    def start(s, e) do
+      wait_first s, e
+    end
+
+    def wait_frist(s = [s1, s2], e = [j, e1, e2]) do
+      wait = (for sq <- s ++ e do
+                {:x, sq}
+      end) ++ (for sq <- e do
+                 {:o, sq}
+      end)
+      case Bp.sync :bp, %Bp.Sync{wait: wait} do
+        {:x, s} when s == s1; s == s2 -> wait_second s, e
+        {_, s} when s == j; s == e1; s == e2 -> :ok
+      end
+    end
+
+    def wait_second(s = [s1, s2], e = [j, e1, e2]) do
+      wait = (for sq <- s ++ e do
+                {:x, sq}
+      end) ++ (for sq <- e do
+                 {:o, sq}
+      end)
+      case Bp.sync :bp, %Bp.Sync{wait: wait} do
+        {:x, s} when s == s1; s == s2 -> intercept(j)
+        {_, s} when s == j; s == e1; s == e2 -> :ok
+      end
+    end
+
+    defp intercept(square) do
+      Bp.sync :bp, %Bp.Sync{request: [{:o, square}]}
+    end
+
   end
 
 
-  def intercept_double_fork do
+  defmodule InterceptDoubleFork do
+    
   end
-
 
 end
 
