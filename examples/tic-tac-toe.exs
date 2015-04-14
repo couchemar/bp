@@ -127,15 +127,15 @@ defmodule TTT do
       wait_first s, e
     end
 
-    def wait_frist(s = [s1, s2], e = [j, e1, e2]) do
+    def wait_first(s = [s1, s2], e = [j, e1, e2]) do
       wait = (for sq <- s ++ e do
                 {:x, sq}
       end) ++ (for sq <- e do
                  {:o, sq}
       end)
       case Bp.sync :bp, %Bp.Sync{wait: wait} do
-        {:x, s} when s == s1; s == s2 -> wait_second s, e
-        {_, s} when s == j; s == e1; s == e2 -> :ok
+        {:x, s} when s == s1 or s == s2 -> wait_second s, e
+        {_, s} when s == j or s == e1 or s == e2 -> :ok
       end
     end
 
@@ -146,8 +146,8 @@ defmodule TTT do
                  {:o, sq}
       end)
       case Bp.sync :bp, %Bp.Sync{wait: wait} do
-        {:x, s} when s == s1; s == s2 -> intercept(j)
-        {_, s} when s == j; s == e1; s == e2 -> :ok
+        {:x, s} when s == s1 or s == s2 -> intercept(j)
+        {_, s} when s == j or s == e1 or s == e2 -> :ok
       end
     end
 
@@ -159,7 +159,30 @@ defmodule TTT do
 
 
   defmodule InterceptDoubleFork do
-    
+
+    def start(opposite_corners) do
+      Bp.sync :bp, %Bp.Sync{wait: (for sq <- opposite_corners do
+                                     {:x, sq}
+                               end)}
+      wait_center opposite_corners
+    end
+
+    def wait_center(opposite_corners) do
+      Bp.sync :bp, %Bp.Sync{wait: [{:o, 5}]}
+      wait_rest opposite_corners
+    end
+
+    def wait_rest(opposite_corners) do
+      Bp.sync :bp, %Bp.Sync{wait: (for sq <- opposite_corners do
+                                     {:x, sq}
+                               end)}
+      attack
+    end
+
+    defp attack do
+      Bp.sync :bp, %Bp.Sync{request: [{:o, 2}]}
+    end
+
   end
 
 end
