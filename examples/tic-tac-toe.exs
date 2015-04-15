@@ -233,7 +233,16 @@ for line <- lines, perm <- Utils.permutations(line) do
   Bp.add :bp, fn() -> TTT.CompleteLineWithTwo.start(perm) end, 8
 end
 
+for line <- lines, rest <- lines -- [line] do
+  sl = line |> Enum.into(HashSet.new)
+  sr = rest |> Enum.into(HashSet.new)
 
+  dif = Set.difference(sl, sr) |> Enum.to_list
+  case length(dif) do
+    3 -> nil
+    2 -> Bp.add :bp, fn() -> TTT.InterceptSingleFork.start(dif, rest) end, 10
+  end
+end
 
 
 
