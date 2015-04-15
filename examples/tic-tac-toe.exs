@@ -244,11 +244,10 @@ for line <- lines, rest <- lines -- [line] do
   end
 end
 
+Bp.add :bp, fn() -> TTT.InterceptDoubleFork.start([1, 9]) end, 11
+Bp.add :bp, fn() -> TTT.InterceptDoubleFork.start([3, 7]) end, 11
 
-
-#Bp.start :bp
-
-
+Bp.start :bp
 
 receive do
   _ -> :ok
