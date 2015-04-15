@@ -9,6 +9,12 @@ defmodule TTT do
 
   defmodule DetectWin do
 
+    @all (for s <- 1..9 do
+            {:x, s}
+    end) ++ (for s <- 1..9 do
+               {:o, s}
+    end) ++ [{:win, :x}, {:win, :o}]
+
     def start(player, squares), do: loop(player, squares)
 
     defp loop(player, [square|rest]) do
@@ -19,6 +25,7 @@ defmodule TTT do
 
     defp declare_win(player) do
       Bp.sync :bp, %Bp.Sync{request: [{:win, player}]}
+      Bp.sync :bp, %Bp.Sync{block: @all  -- [{:win, player}]}
     end
 
   end
@@ -134,8 +141,8 @@ defmodule TTT do
                  {:o, sq}
       end)
       case Bp.sync :bp, %Bp.Sync{wait: wait} do
-        {:x, s} when s == s1 or s == s2 -> wait_second s, e
-        {_, s} when s == j or s == e1 or s == e2 -> :ok
+        {:x, sq} when sq == s1 or sq == s2 -> wait_second s, e
+        {_, sq} when sq == j or sq == e1 or sq == e2 -> :ok
       end
     end
 
@@ -146,8 +153,8 @@ defmodule TTT do
                  {:o, sq}
       end)
       case Bp.sync :bp, %Bp.Sync{wait: wait} do
-        {:x, s} when s == s1 or s == s2 -> intercept(j)
-        {_, s} when s == j or s == e1 or s == e2 -> :ok
+        {:x, sq} when sq == s1 or sq == s2 -> intercept(j)
+        {_, sq} when sq == j or sq == e1 or sq == e2 -> :ok
       end
     end
 
@@ -196,7 +203,11 @@ defmodule Utils do
   end
 end
 
+require Logger
+Logger.configure level: :info
+
 require Bp
+
 bc = Bp.spawn
 Process.register bc, :bp
 
@@ -246,6 +257,31 @@ end
 
 Bp.add :bp, fn() -> TTT.InterceptDoubleFork.start([1, 9]) end, 11
 Bp.add :bp, fn() -> TTT.InterceptDoubleFork.start([3, 7]) end, 11
+
+:random.seed(:os.timestamp)
+allx = for s <- 1..9 do
+  {:x, s}
+end |> Enum.shuffle
+
+#allx = [4, 9, 3, 7, 2, 1, 5, 6, 8] |> Enum.map(fn(x) -> {:x, x} end)
+
+all = (for s <- 1..9 do
+         {:x, s}
+end) ++ (for s <- 1..9 do
+           {:o, s}
+end) ++ [{:win, :x}, {:win, :o}]
+
+dummy = fn(self, events) ->
+  IO.puts "Events: #{inspect events}"
+  event = Bp.sync :bp, %Bp.Sync{request: allx,
+                                wait: all}
+  IO.puts "Event is #{inspect event}"
+  self.(self, [event|events])
+end
+
+
+Bp.add :bp, fn() -> dummy.(dummy, []) end, 5
+
 
 Bp.start :bp
 

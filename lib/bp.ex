@@ -62,7 +62,9 @@ defmodule Bp do
   defp do_sync(procs, syncs) when length(procs) == length(syncs) do
     Logger.debug fn() -> "Doing sync" end
     alive_syncs = drop_removed syncs
+    Logger.debug fn() -> "Alive syncs: #{inspect alive_syncs}" end
     alive_procs = keep_alive procs, alive_syncs
+    Logger.debug fn() -> "Alive procs: #{inspect alive_procs}" end
 
     proc_request = get_proc_requests alive_syncs
     prio_request = for {p, e} <- proc_request do
@@ -72,8 +74,10 @@ defmodule Bp do
     blocked = List.flatten(
       for %Bp.Sync{block: block} <- alive_syncs, do: block
     )
+    Logger.debug fn() -> "Blocked events: #{inspect blocked}" end
 
     events = for e = {_, r} <- prio_request, !Enum.member?(blocked, r), do: e
+    Logger.debug fn() -> "Waiting events: #{inspect events}" end
 
     case events do
       [] -> {alive_procs, alive_syncs}
