@@ -294,20 +294,40 @@ defmodule PrintEvents do
   end
 end
 
-dummy = fn(self, events) ->
-  event = Bp.sync :bp, %Bp.Sync{request: allx,
-                                wait: all}
-  case event do
-    {:win, _} -> :ok
-    _ ->
-      events = [event|events]
-      IO.puts "========="
-      events |> PrintEvents.print
-      self.(self, events)
+defmodule Display do
+
+  @all (for s <- 1..9 do
+            {:x, s}
+  end) ++ (for s <- 1..9 do
+             {:o, s}
+  end) ++ [{:win, :x}, {:win, :o}]
+  
+  def start, do: loop(1, [])
+
+  defp loop(round, events) do
+    IO.puts "Round #{round}"
+    IO.puts "========="
+    event = Bp.sync :bp, %Bp.Sync{wait: @all}
+    events = [event|events]
+    events |> PrintEvents.print
+    case event do
+      {:win, player} ->
+        IO.puts "Player \"#{player}\" wins"
+      _ ->
+        loop(round + 1, events)
+    end
   end
 end
 
-Bp.add :bp, fn() -> dummy.(dummy, []) end, 5
+Bp.add :bp, &Display.start/0
+
+dummy = fn(self) ->
+  event = Bp.sync :bp, %Bp.Sync{request: allx,
+                                wait: all}
+  self.(self)
+end
+
+Bp.add :bp, fn() -> dummy.(dummy) end, 5
 
 Bp.start :bp
 
