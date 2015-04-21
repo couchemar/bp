@@ -250,7 +250,7 @@ for line <- lines, rest <- lines -- [line] do
 
   dif = Set.difference(sl, sr) |> Enum.to_list
   case length(dif) do
-    3 -> nil
+    3 -> " "
     2 -> Bp.add :bp, fn() -> TTT.InterceptSingleFork.start(dif, rest) end, 10
   end
 end
@@ -271,21 +271,46 @@ end) ++ (for s <- 1..9 do
            {:o, s}
 end) ++ [{:win, :x}, {:win, :o}]
 
-dummy = fn(self, events) ->
-  IO.puts "Events: #{inspect events}"
-  event = Bp.sync :bp, %Bp.Sync{request: allx,
-                                wait: all}
-  IO.puts "Event is #{inspect event}"
-  self.(self, [event|events])
+defmodule PrintEvents do
+  def print(events) do
+    squares = for {k,v} <- events do
+      {v, k}
+    end |> Enum.sort
+
+    for line <- expand(squares, 1, []) |> Enum.chunk(3) do
+      line |> Enum.join(" | ") |> IO.puts
+    end
+  end
+
+  defp expand(_, _, board) when length(board) == 9, do: Enum.reverse(board)
+  defp expand([], index, board), do: expand([], index + 1, [" "|board])
+  defp expand(squares, index, board) do
+   [{ix, player}|rest] = squares
+   cond do
+     ix < index -> expand(rest, index, [player|board])
+     ix == index -> expand(rest, index + 1, [player|board])
+     true -> expand(squares, index + 1, [" "|board])
+   end
+  end
 end
 
+dummy = fn(self, events) ->
+  event = Bp.sync :bp, %Bp.Sync{request: allx,
+                                wait: all}
+  case event do
+    {:win, _} -> :ok
+    _ ->
+      events = [event|events]
+      IO.puts "========="
+      events |> PrintEvents.print
+      self.(self, events)
+  end
+end
 
 Bp.add :bp, fn() -> dummy.(dummy, []) end, 5
-
 
 Bp.start :bp
 
 receive do
   _ -> :ok
 end
-
