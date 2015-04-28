@@ -30,6 +30,28 @@ defmodule TTT do
 
   end
 
+  defmodule DetectTie do
+    @allS (for s <- 1..9 do
+            {:x, s}
+    end) ++ (for s <- 1..9 do
+               {:o, s}
+    end)
+
+    @all @allS ++ [{:win, :x}, {:win, :o}]
+
+    def start, do: loop(1..9 |> Enum.to_list)
+
+    defp loop([]) do
+      Bp.sync :bp, %Bp.Sync{request: [:tie]}
+      Bp.sync :bp, %Bp.Sync{block: @all}
+    end
+    defp loop(squares) do
+      {_, square} = Bp.sync :bp, %Bp.Sync{wait: @all}
+      loop(squares -- [square])
+    end
+
+  end
+
   defmodule EnforceTurns do
 
     @allXs (for s <- 1..9 do
@@ -228,6 +250,8 @@ for player <- [:x, :o], line <- lines, perm <- Utils.permutations(line) do
   Bp.add :bp, fn() -> TTT.DetectWin.start(player, perm) end, 0
 end
 
+Bp.add :bp, &TTT.DetectTie.start/0, 0
+
 Bp.add :bp, &TTT.EnforceTurns.start/0, 1
 
 for square <- 1..9 do
@@ -262,8 +286,6 @@ Bp.add :bp, fn() -> TTT.InterceptDoubleFork.start([3, 7]) end, 11
 allx = for s <- 1..9 do
   {:x, s}
 end |> Enum.shuffle
-
-#allx = [4, 9, 3, 7, 2, 1, 5, 6, 8] |> Enum.map(fn(x) -> {:x, x} end)
 
 all = (for s <- 1..9 do
          {:x, s}
@@ -300,20 +322,22 @@ defmodule Display do
             {:x, s}
   end) ++ (for s <- 1..9 do
              {:o, s}
-  end) ++ [{:win, :x}, {:win, :o}]
-  
+  end) ++ [{:win, :x}, {:win, :o}, :tie]
+
   def start, do: loop(1, [])
 
   defp loop(round, events) do
-    IO.puts "Round #{round}"
-    IO.puts "========="
     event = Bp.sync :bp, %Bp.Sync{wait: @all}
-    events = [event|events]
-    events |> PrintEvents.print
     case event do
       {:win, player} ->
         IO.puts "Player \"#{player}\" wins"
+      :tie ->
+        IO.puts "Tie"
       _ ->
+        IO.puts "Round #{round}"
+        IO.puts "========="
+        events = [event|events]
+        events |> PrintEvents.print
         loop(round + 1, events)
     end
   end
@@ -322,8 +346,7 @@ end
 Bp.add :bp, &Display.start/0
 
 dummy = fn(self) ->
-  event = Bp.sync :bp, %Bp.Sync{request: allx,
-                                wait: all}
+  Bp.sync :bp, %Bp.Sync{request: allx, wait: all}
   self.(self)
 end
 
