@@ -1,7 +1,9 @@
 defmodule Test do
 
+  @all_events [:morning, :evening]
+
   def display do
-    event = Bp.sync :bp, %Bp.Sync{wait: [:morning, :evening]}
+    event = Bp.sync :bp, %Bp.Sync{wait: @all_events}
     IO.puts "Good #{inspect event}"
     display
   end

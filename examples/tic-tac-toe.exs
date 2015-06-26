@@ -1,3 +1,31 @@
+defmodule Events do
+
+  @allXs (for s <- 1..9 do
+            {:x, s}
+  end)
+
+  @allOs (for s <- 1..9 do
+            {:o, s}
+  end)
+
+  @wins [{:win, :x}, {:win, :o}]
+
+  @all @allXs ++ @allOs ++ @wins ++ [:tie]
+
+  def all do
+    @all
+  end
+
+  def allXs do
+    @allXs
+  end
+
+  def allOs do
+    @allOs
+  end
+
+end
+
 defmodule TTT do
 
   @moduledoc """
@@ -6,14 +34,7 @@ defmodule TTT do
   |4|5|6|
   |7|8|9|
   """
-
   defmodule DetectWin do
-
-    @all (for s <- 1..9 do
-            {:x, s}
-    end) ++ (for s <- 1..9 do
-               {:o, s}
-    end) ++ [{:win, :x}, {:win, :o}]
 
     def start(player, squares), do: loop(player, squares)
 
@@ -25,52 +46,35 @@ defmodule TTT do
 
     defp declare_win(player) do
       Bp.sync :bp, %Bp.Sync{request: [{:win, player}]}
-      Bp.sync :bp, %Bp.Sync{block: @all  -- [{:win, player}]}
+      Bp.sync :bp, %Bp.Sync{block: Events.all  -- [{:win, player}]}
     end
 
   end
 
   defmodule DetectTie do
-    @allS (for s <- 1..9 do
-            {:x, s}
-    end) ++ (for s <- 1..9 do
-               {:o, s}
-    end)
-
-    @all @allS ++ [{:win, :x}, {:win, :o}]
-
     def start, do: loop(1..9 |> Enum.to_list)
 
     defp loop([]) do
       Bp.sync :bp, %Bp.Sync{request: [:tie]}
-      Bp.sync :bp, %Bp.Sync{block: @all}
+      Bp.sync :bp, %Bp.Sync{block: Events.all}
     end
     defp loop(squares) do
-      {_, square} = Bp.sync :bp, %Bp.Sync{wait: @all}
+      {_, square} = Bp.sync :bp, %Bp.Sync{wait: Events.all}
       loop(squares -- [square])
     end
 
   end
 
   defmodule EnforceTurns do
-
-    @allXs (for s <- 1..9 do
-      {:x, s}
-    end)
-
-    @allOs (for s <- 1..9 do
-      {:o, s}
-    end)
-
     def start, do: waitX
 
     defp waitX do
-      Bp.sync :bp, %Bp.Sync{wait: @allXs, block: @allOs}
+      Bp.sync :bp, %Bp.Sync{wait: Events.allXs, block: Events.allOs}
       waitO
     end
 
     defp waitO do
-      Bp.sync :bp, %Bp.Sync{wait: @allOs, block: @allXs}
+      Bp.sync :bp, %Bp.Sync{wait: Events.allOs, block: Events.allXs}
       waitX
     end
 
@@ -101,14 +105,8 @@ defmodule TTT do
       {:o, 8}
     ]
 
-    @all_moves (for s <- 1..9 do
-      {:x, s}
-    end) ++ (for s <- 1..9 do
-      {:o, s}
-    end) ++ [{:win, :x}, {:win, :o}]
-
     def start do
-      Bp.sync :bp, %Bp.Sync{request: @default_moves, wait: @all_moves}
+      Bp.sync :bp, %Bp.Sync{request: @default_moves, wait: Events.all}
       start
     end
 
@@ -282,17 +280,6 @@ end
 Bp.add :bp, fn() -> TTT.InterceptDoubleFork.start([1, 9]) end, 11
 Bp.add :bp, fn() -> TTT.InterceptDoubleFork.start([3, 7]) end, 11
 
-:random.seed(:os.timestamp)
-allx = for s <- 1..9 do
-  {:x, s}
-end |> Enum.shuffle
-
-all = (for s <- 1..9 do
-         {:x, s}
-end) ++ (for s <- 1..9 do
-           {:o, s}
-end) ++ [{:win, :x}, {:win, :o}]
-
 defmodule PrintEvents do
   def print(events) do
     squares = for {k,v} <- events do
@@ -318,16 +305,10 @@ end
 
 defmodule Display do
 
-  @all (for s <- 1..9 do
-            {:x, s}
-  end) ++ (for s <- 1..9 do
-             {:o, s}
-  end) ++ [{:win, :x}, {:win, :o}, :tie]
-
   def start, do: loop(1, [])
 
   defp loop(round, events) do
-    event = Bp.sync :bp, %Bp.Sync{wait: @all}
+    event = Bp.sync :bp, %Bp.Sync{wait: Events.all}
     case event do
       {:win, player} ->
         IO.puts "Player \"#{player}\" wins"
@@ -346,7 +327,8 @@ end
 Bp.add :bp, &Display.start/0
 
 dummy = fn(self) ->
-  Bp.sync :bp, %Bp.Sync{request: allx, wait: all}
+  :random.seed(:os.timestamp)
+  Bp.sync :bp, %Bp.Sync{request: Events.allXs |> Enum.shuffle, wait: Events.all}
   self.(self)
 end
 
