@@ -287,11 +287,13 @@ allx = for s <- 1..9 do
   {:x, s}
 end |> Enum.shuffle
 
-all = (for s <- 1..9 do
+allS = (for s <- 1..9 do
          {:x, s}
 end) ++ (for s <- 1..9 do
            {:o, s}
-end) ++ [{:win, :x}, {:win, :o}]
+         end)
+
+all = allS ++ [{:win, :x}, {:win, :o}]
 
 defmodule PrintEvents do
   def print(events) do
@@ -346,11 +348,20 @@ end
 Bp.add :bp, &Display.start/0
 
 dummy = fn(self) ->
-  Bp.sync :bp, %Bp.Sync{request: allx, wait: all}
+  Bp.sync :bp, %Bp.Sync{request: allx}
   self.(self)
 end
 
 Bp.add :bp, fn() -> dummy.(dummy) end, 5
+
+wait = fn(self) ->
+  Bp.sync :bp, %Bp.Sync{request: [:sleep], block: allS}
+  :timer.sleep(1000)
+  Bp.sync :bp, %Bp.Sync{wait: all}
+  self.(self)
+end
+
+Bp.add :bp, fn () -> wait.(wait) end, 15
 
 Bp.start :bp
 
